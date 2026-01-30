@@ -13,11 +13,15 @@ defmodule Mix.Tasks.Game.Cli do
   end
 
   defp loop do
-    input = IO.gets("arena> ") |> String.trim()
+    case IO.gets("arena> ") do
+      :eof ->
+        IO.puts("Goodbye!")
 
-    case parse_command(input) do
-      :quit -> IO.puts("Goodbye!")
-      :continue -> loop()
+      input ->
+        case parse_command(String.trim(input)) do
+          :quit -> IO.puts("Goodbye!")
+          :continue -> loop()
+        end
     end
   end
 
@@ -54,6 +58,10 @@ defmodule Mix.Tasks.Game.Cli do
       tick                     - Show tick stats
       tables                   - Show Mnesia table info
       reset                    - Clear all game state
+
+    Diagrams:
+      diagram                  - Show available diagrams
+      diagram <name>           - Render diagram (arch, loop, ai, combat, data)
 
     help                       - Show this help
     quit                       - Exit CLI
@@ -405,10 +413,126 @@ defmodule Mix.Tasks.Game.Cli do
     :continue
   end
 
+  # === Diagram Commands ===
+
+  defp parse_command("diagram") do
+    IO.puts("""
+
+    Available diagrams:
+      arch     - System architecture / supervision tree
+      loop     - Game loop tick sequence
+      ai       - NPC AI state machine
+      combat   - Combat ability flow
+      data     - Data layer (Mnesia tables)
+
+    Usage: diagram <name>
+    Requires: mermaid-ascii (install: uv tool install mermaid-ascii)
+    """)
+
+    :continue
+  end
+
+  defp parse_command("diagram " <> name) do
+    diagram =
+      case String.trim(name) do
+        "arch" ->
+          """
+          graph LR
+            App[Application] --> Sup[GameEngine.Supervisor]
+            Sup --> Mnesia[MnesiaSetup]
+            Sup --> Loop[GameLoop]
+            Sup --> Combat[CombatServer]
+            Sup --> AI[AIServer]
+            Sup --> Loot[LootServer]
+            Sup --> Party[PartyServer]
+            Sup --> Dungeon[DungeonServer]
+          """
+
+        "loop" ->
+          """
+          graph LR
+            Move[Movement] --> AI[AI Tick]
+            AI --> Combat[Combat]
+            Combat --> Loot[Loot Cleanup]
+            Loot --> Broadcast[Broadcast]
+          """
+
+        "ai" ->
+          """
+          graph LR
+            Idle --> |aggro| Chase
+            Chase --> |in range| Attack
+            Chase --> |lost| Idle
+            Attack --> |out of range| Chase
+            Attack --> |low hp| Flee
+            Flee --> |at spawn| Idle
+          """
+
+        "combat" ->
+          """
+          graph LR
+            Cast[Cast Ability] --> CD[Check Cooldown]
+            CD --> Mana[Check Mana]
+            Mana --> Range[Check Range]
+            Range --> Exec[Execute]
+            Exec --> Dmg[Apply Damage]
+            Dmg --> Event[Record Event]
+          """
+
+        "data" ->
+          """
+          graph LR
+            Mnesia[Mnesia RAM] --> Pos[player_positions]
+            Mnesia --> Stats[player_stats]
+            Mnesia --> CD[player_cooldowns]
+            Mnesia --> NPC[npc_state]
+            Mnesia --> LP[loot_piles]
+            Mnesia --> PS[party_state]
+            Mnesia --> DI[dungeon_instances]
+            Mnesia --> CE[combat_events]
+          """
+
+        other ->
+          IO.puts("Unknown diagram: #{other}")
+          IO.puts("Available: arch, loop, ai, combat, data")
+          nil
+      end
+
+    if diagram do
+      render_mermaid(diagram)
+    end
+
+    :continue
+  end
+
   defp parse_command(unknown) do
     IO.puts("Unknown command: #{unknown}")
     IO.puts("Type 'help' for available commands")
     :continue
+  end
+
+  # === Diagram Rendering ===
+
+  defp render_mermaid(mermaid_string) do
+    case System.find_executable("mermaid-ascii") do
+      nil ->
+        IO.puts("mermaid-ascii not found. Install with: uv tool install mermaid-ascii")
+
+      _exe ->
+        tmp = Path.join(System.tmp_dir!(), "slow_arena_diagram.mmd")
+        File.write!(tmp, mermaid_string)
+
+        case System.cmd("mermaid-ascii", ["-f", tmp], stderr_to_stdout: true) do
+          {output, 0} ->
+            IO.puts("")
+            IO.puts(output)
+
+          {error, _code} ->
+            IO.puts("Error rendering diagram: #{String.trim(error)}")
+        end
+
+        File.rm(tmp)
+    end
   end
 
   # === Helpers ===
