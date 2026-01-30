@@ -1,0 +1,12 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    command: start --user root --pass root --bind 0.0.0.0:8000 file:/data/srdb.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb_data:/data
+    restart: unless-stopped
+
+volumes:
+  surrealdb_data:
