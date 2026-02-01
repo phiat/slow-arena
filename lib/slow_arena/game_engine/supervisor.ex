@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.Supervisor do
+  @moduledoc "Supervision tree for all game engine GenServers."
   use Supervisor
 
   def start_link(opts) do

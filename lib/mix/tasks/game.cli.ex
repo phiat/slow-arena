@@ -137,10 +137,17 @@ defmodule Mix.Tasks.Game.Cli do
 
     case :mnesia.dirty_read(:player_stats, name) do
       [{:player_stats, _, class, level, hp, max_hp, mana, max_mana, str, int, agi, armor}] ->
+        gold =
+          case :mnesia.dirty_read(:player_gold, name) do
+            [{:player_gold, _, amount}] -> amount
+            [] -> 0
+          end
+
         IO.puts("""
         #{name} [#{class}] Lv.#{level}
           HP: #{hp}/#{max_hp}  Mana: #{mana}/#{max_mana}
           STR: #{str}  INT: #{int}  AGI: #{agi}  Armor: #{armor}
+          Gold: #{gold}
         """)
 
       [] ->
@@ -270,7 +277,7 @@ defmodule Mix.Tasks.Game.Cli do
 
       Enum.each(loot, fn l ->
         items_str =
-          Enum.map(l.items, fn i -> "#{i.item_id}x#{i.quantity}" end) |> Enum.join(", ")
+          Enum.map_join(l.items, ", ", fn i -> "#{i.item_id}x#{i.quantity}" end)
 
         IO.puts("    #{l.id} @ (#{l.x}, #{l.y}) - #{items_str} #{l.gold}g")
       end)
@@ -377,6 +384,9 @@ defmodule Mix.Tasks.Game.Cli do
       :player_stats,
       :player_cooldowns,
       :player_auto_attack,
+      :player_equipment,
+      :player_gold,
+      :player_inventory,
       :npc_state,
       :loot_piles,
       :party_state,
@@ -401,6 +411,9 @@ defmodule Mix.Tasks.Game.Cli do
       :player_stats,
       :player_cooldowns,
       :player_auto_attack,
+      :player_equipment,
+      :player_gold,
+      :player_inventory,
       :npc_state,
       :loot_piles,
       :party_state,
@@ -538,23 +551,22 @@ defmodule Mix.Tasks.Game.Cli do
   # === Helpers ===
 
   defp spawn_player(name, class) do
-    {hp, mana, str, int, agi, armor} =
-      case class do
-        :warrior -> {100, 30, 15, 5, 8, 20}
-        :mage -> {60, 100, 5, 15, 8, 5}
-        :ranger -> {80, 50, 8, 8, 15, 10}
-        :rogue -> {70, 40, 10, 5, 15, 8}
-      end
+    stats = SlowArena.GameEngine.Classes.stats(class)
 
     :mnesia.dirty_write(
       {:player_positions, name, 100.0, 100.0, 0.0, 0.0, 0.0, "lobby", "lobby",
        System.monotonic_time(:millisecond)}
     )
 
-    :mnesia.dirty_write({:player_stats, name, class, 1, hp, hp, mana, mana, str, int, agi, armor})
+    :mnesia.dirty_write(
+      {:player_stats, name, stats.class, 1, stats.hp, stats.max_hp, stats.mana, stats.max_mana,
+       stats.str, stats.int, stats.agi, stats.armor}
+    )
+
+    :mnesia.dirty_write({:player_gold, name, 0})
 
     IO.puts(
-      "Spawned #{name} [#{class}] HP:#{hp} Mana:#{mana} STR:#{str} INT:#{int} AGI:#{agi} Armor:#{armor}"
+      "Spawned #{name} [#{stats.class}] HP:#{stats.hp} Mana:#{stats.mana} STR:#{stats.str} INT:#{stats.int} AGI:#{stats.agi} Armor:#{stats.armor}"
     )
   end
 

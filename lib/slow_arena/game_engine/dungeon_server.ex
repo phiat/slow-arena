@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.DungeonServer do
+  @moduledoc "Dungeon instance creation and NPC spawning from templates."
   use GenServer
   require Logger
 
@@ -14,6 +15,26 @@ defmodule SlowArena.GameEngine.DungeonServer do
         %{template_id: "goblin", x: 300, y: 400, base_health: 30},
         %{template_id: "goblin", x: 500, y: 450, base_health: 30},
         %{template_id: "boss_ogre", x: 700, y: 500, base_health: 200}
+      ]
+    },
+    "spider_den" => %{
+      name: "Spider Den",
+      width: 800,
+      height: 600,
+      npc_spawns: [
+        # Spider group 1 (top-left cluster)
+        %{template_id: "spider", x: 150, y: 120, base_health: 20},
+        %{template_id: "spider", x: 180, y: 150, base_health: 20},
+        %{template_id: "spider", x: 130, y: 170, base_health: 20},
+        # Spider group 2 (center-right)
+        %{template_id: "spider", x: 550, y: 280, base_health: 20},
+        %{template_id: "spider", x: 580, y: 310, base_health: 20},
+        %{template_id: "spider", x: 520, y: 320, base_health: 20},
+        # Ghosts (roaming mid-area)
+        %{template_id: "ghost", x: 350, y: 200, base_health: 25},
+        %{template_id: "ghost", x: 400, y: 420, base_health: 25},
+        # Necromancer mini-boss (back of den)
+        %{template_id: "necromancer", x: 700, y: 500, base_health: 120}
       ]
     }
   }

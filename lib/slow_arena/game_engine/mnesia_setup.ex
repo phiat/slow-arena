@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.MnesiaSetup do
+  @moduledoc "Creates Mnesia RAM tables for real-time game state on startup."
   use GenServer
   require Logger
 
@@ -66,7 +67,11 @@ defmodule SlowArena.GameEngine.MnesiaSetup do
          :boss_defeated,
          :loot_spawned
        ]},
-      {:combat_events, [:event_id, :type, :attacker_id, :target_id, :damage, :timestamp]}
+      {:combat_events, [:event_id, :type, :attacker_id, :target_id, :damage, :timestamp]},
+      {:player_equipment,
+       [:character_id, :weapon, :armor_piece, :accessory, :updated_at]},
+      {:player_gold, [:character_id, :amount]},
+      {:player_inventory, [:key, :item_id, :quantity]}
     ]
 
     Enum.each(tables, fn {name, attributes} ->

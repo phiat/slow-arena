@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.PartyServer do
+  @moduledoc "Party formation and management for dungeon instances."
   use GenServer
   require Logger
 
