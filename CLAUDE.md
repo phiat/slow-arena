@@ -1,6 +1,7 @@
 # CLAUDE.md - Project Directives
 
 If a tool is needed and not installed, ask the user before installing it.
+Never run sudo — ask the user to run sudo commands themselves.
 
 ## Project: Slow Arena - Gauntlet-style RPG Game Engine
 
@@ -23,6 +24,12 @@ make cli        # Game CLI
 make db         # Start SurrealDB
 make db.reset   # Reset database
 ```
+
+### Docker Notes
+- SurrealDB runs via `docker compose up -d surrealdb` (port 8000)
+- Dev uses in-memory mode (`memory`) — data resets on container restart
+- If permission errors on file-backed storage, switch to `memory` in docker-compose.yml
+- User must be in `docker` group (`sudo usermod -aG docker $USER`)
 
 ### Architecture
 - **GameEngine** - OTP app with GenServers for game loop, combat, AI
