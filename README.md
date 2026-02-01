@@ -23,7 +23,7 @@ graph TD
     App --> Web[SlowArenaWeb.Endpoint]
 
     GE --> Mnesia[MnesiaSetup]
-    GE --> Loop[GameLoop — 10Hz]
+    GE --> Loop["GameLoop - 10Hz"]
     GE --> Combat[CombatServer]
     GE --> AI[AIServer]
     GE --> Loot[LootServer]
@@ -168,7 +168,7 @@ arena> diagram data
 
 ```mermaid
 graph LR
-    subgraph Mnesia — RAM
+    subgraph Mnesia_RAM["Mnesia - RAM"]
         A[player_positions]
         B[player_stats]
         C[player_cooldowns]
@@ -183,7 +183,7 @@ graph LR
         H[combat_events]
     end
 
-    subgraph SurrealDB — Persistent
+    subgraph SurrealDB_Persistent["SurrealDB - Persistent"]
         I[accounts]
         J[characters]
         K[inventory]
