@@ -2,7 +2,8 @@ defmodule SlowArenaWeb.GameLive do
   use SlowArenaWeb, :live_view
   require Logger
 
-  alias SlowArena.GameEngine.{Movement, CombatServer, DungeonServer, LootServer, Broadcast, Classes}
+  alias SlowArena.GameEngine.{Movement, CombatServer, DungeonServer, LootServer, Broadcast}
+  alias SlowArena.Persistence
 
   @ability_keys %{
     "1" => "slash",
@@ -20,8 +21,8 @@ defmodule SlowArenaWeb.GameLive do
       player_id = "player_#{:erlang.unique_integer([:positive])}"
       class = "warrior"
 
-      # Spawn the player
-      spawn_player(player_id, class)
+      # Load existing character or create new one
+      load_or_create_character(player_id, class)
 
       # Create a dungeon with monsters
       {:ok, instance_id} = DungeonServer.create_instance("crypt_of_bones", "solo", :normal)
@@ -35,6 +36,8 @@ defmodule SlowArenaWeb.GameLive do
       # Subscribe to game state broadcasts
       Phoenix.PubSub.subscribe(SlowArena.PubSub, Broadcast.topic())
 
+      # Schedule periodic saves
+      :timer.send_interval(Persistence.save_interval_ms(), :save_character)
 
       {:ok,
        assign(socket,
@@ -59,6 +62,7 @@ defmodule SlowArenaWeb.GameLive do
   @impl true
   def terminate(_reason, socket) do
     if player_id = socket.assigns[:player_id] do
+      Persistence.save_character(player_id)
       cleanup_player(player_id)
     end
 
@@ -76,6 +80,15 @@ defmodule SlowArenaWeb.GameLive do
   @impl true
   def handle_event("keyup", %{"key" => key}, socket) do
     socket = handle_key(socket, key, false)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:save_character, socket) do
+    if player_id = socket.assigns[:player_id] do
+      Persistence.save_character(player_id)
+    end
+
     {:noreply, socket}
   end
 
@@ -170,20 +183,15 @@ defmodule SlowArenaWeb.GameLive do
     assign(socket, :keys, keys)
   end
 
-  defp spawn_player(player_id, class_name) do
-    stats = Classes.stats(class_name)
+  defp load_or_create_character(player_id, class_name) do
+    case Persistence.load_character(player_id) do
+      {:ok, _char} ->
+        Logger.info("Loaded existing character #{player_id}")
 
-    :mnesia.dirty_write(
-      {:player_positions, player_id, 50.0, 300.0, 0.0, 0.0, 0.0, "lobby", nil,
-       System.monotonic_time(:millisecond)}
-    )
-
-    :mnesia.dirty_write(
-      {:player_stats, player_id, stats.class, 1, stats.hp, stats.max_hp, stats.mana,
-       stats.max_mana, stats.str, stats.int, stats.agi, stats.armor}
-    )
-
-    :mnesia.dirty_write({:player_gold, player_id, 0})
+      :not_found ->
+        Persistence.create_character(player_id, class_name)
+        Logger.info("Created new character #{player_id} (#{class_name})")
+    end
   end
 
   defp cleanup_player(player_id) do

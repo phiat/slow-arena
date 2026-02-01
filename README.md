@@ -82,9 +82,9 @@ graph LR
 ## Tech Stack
 
 - **Elixir 1.19 / OTP 28** — game engine as OTP supervision tree
-- **Phoenix + LiveView** — web client (WIP)
+- **Phoenix + LiveView** — web client at `/play`
 - **Mnesia** — in-memory real-time game state (12 tables)
-- **SurrealDB** — persistent storage via Docker (WIP)
+- **SurrealDB** — persistent storage via Docker (6 tables: accounts, characters, item_definitions, inventory, dungeon_templates, run_history)
 
 ## Quick Start
 
@@ -92,13 +92,16 @@ graph LR
 # Install deps and start SurrealDB
 make setup
 
+# Seed SurrealDB (items, dungeons, schema)
+make db.seed
+
 # Run tests
 make test
 
 # Interactive game CLI
 make cli
 
-# Start Phoenix server
+# Start Phoenix server (play at http://localhost:4000/play)
 make server
 ```
 
@@ -192,10 +195,14 @@ graph LR
         J[characters]
         K[inventory]
         L[dungeon_templates]
+        M[item_definitions]
+        N[run_history]
     end
 
-    A -.->|persist on save| J
-    B -.->|persist on save| J
+    A -.->|save every 30s| J
+    B -.->|save every 30s| J
+    PG -.->|save every 30s| J
+    PI -.->|save every 30s| K
 ```
 
 ## Project Structure
@@ -217,6 +224,8 @@ lib/
 │       ├── party_server.ex     # Party management
 │       ├── dungeon_server.ex   # Instance management
 │       └── classes.ex          # Character class stat templates
+│   ├── persistence.ex           # Character save/load (Mnesia ↔ SurrealDB)
+│   └── surreal_db.ex            # SurrealDB HTTP client (Req)
 ├── slow_arena_web/
 │   ├── live/
 │   │   └── game_live.ex        # LiveView game client

@@ -1,5 +1,10 @@
 alias SlowArena.SurrealDB
 
+# Helper to convert a map to SurrealDB SET clause values
+map_to_set = fn map ->
+  Enum.map_join(map, ", ", fn {k, v} -> "#{k} = #{Jason.encode!(v)}" end)
+end
+
 IO.puts("=== SurrealDB Schema & Seed ===")
 
 # -- Namespace / Database --
@@ -9,13 +14,13 @@ SurrealDB.query!("USE NS slow_arena DB game")
 # 1. accounts
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE accounts SCHEMAFULL;
-DEFINE FIELD username      ON accounts TYPE string;
-DEFINE FIELD password_hash  ON accounts TYPE string;
-DEFINE FIELD email          ON accounts TYPE option<string>;
-DEFINE FIELD created_at     ON accounts TYPE datetime DEFAULT time::now();
-DEFINE FIELD last_login     ON accounts TYPE option<datetime>;
-DEFINE INDEX idx_username   ON accounts FIELDS username UNIQUE;
+DEFINE TABLE IF NOT EXISTS accounts SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS username      ON accounts TYPE string;
+DEFINE FIELD IF NOT EXISTS password_hash  ON accounts TYPE string;
+DEFINE FIELD IF NOT EXISTS email          ON accounts TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created_at     ON accounts TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS last_login     ON accounts TYPE option<datetime>;
+DEFINE INDEX IF NOT EXISTS idx_username   ON accounts FIELDS username UNIQUE;
 """)
 IO.puts("✓ accounts")
 
@@ -23,30 +28,30 @@ IO.puts("✓ accounts")
 # 2. characters
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE characters SCHEMAFULL;
-DEFINE FIELD account       ON characters TYPE record<accounts>;
-DEFINE FIELD name          ON characters TYPE string;
-DEFINE FIELD class         ON characters TYPE string
+DEFINE TABLE IF NOT EXISTS characters SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS account       ON characters TYPE option<record<accounts>>;
+DEFINE FIELD IF NOT EXISTS name          ON characters TYPE string;
+DEFINE FIELD IF NOT EXISTS class         ON characters TYPE string
   ASSERT $value IN ["warrior", "mage", "ranger", "rogue"];
-DEFINE FIELD level         ON characters TYPE int DEFAULT 1;
-DEFINE FIELD experience    ON characters TYPE int DEFAULT 0;
-DEFINE FIELD gold          ON characters TYPE int DEFAULT 0;
-DEFINE FIELD stats         ON characters TYPE object;
-DEFINE FIELD stats.max_hp  ON characters TYPE int;
-DEFINE FIELD stats.max_mana ON characters TYPE int;
-DEFINE FIELD stats.str     ON characters TYPE int;
-DEFINE FIELD stats.int     ON characters TYPE int;
-DEFINE FIELD stats.agi     ON characters TYPE int;
-DEFINE FIELD stats.armor   ON characters TYPE int;
-DEFINE FIELD position      ON characters TYPE object;
-DEFINE FIELD position.x    ON characters TYPE float DEFAULT 50.0;
-DEFINE FIELD position.y    ON characters TYPE float DEFAULT 300.0;
-DEFINE FIELD position.zone ON characters TYPE string DEFAULT "lobby";
-DEFINE FIELD position.facing ON characters TYPE string DEFAULT "right";
-DEFINE FIELD created_at    ON characters TYPE datetime DEFAULT time::now();
-DEFINE FIELD last_played   ON characters TYPE option<datetime>;
-DEFINE INDEX idx_char_name    ON characters FIELDS name UNIQUE;
-DEFINE INDEX idx_char_account ON characters FIELDS account;
+DEFINE FIELD IF NOT EXISTS level         ON characters TYPE int DEFAULT 1;
+DEFINE FIELD IF NOT EXISTS experience    ON characters TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS gold          ON characters TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS stats         ON characters TYPE object;
+DEFINE FIELD IF NOT EXISTS stats.max_hp  ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS stats.max_mana ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS stats.str     ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS stats.int     ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS stats.agi     ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS stats.armor   ON characters TYPE int;
+DEFINE FIELD IF NOT EXISTS position      ON characters TYPE object;
+DEFINE FIELD IF NOT EXISTS position.x    ON characters TYPE float DEFAULT 50.0;
+DEFINE FIELD IF NOT EXISTS position.y    ON characters TYPE float DEFAULT 300.0;
+DEFINE FIELD IF NOT EXISTS position.zone ON characters TYPE string DEFAULT "lobby";
+DEFINE FIELD IF NOT EXISTS position.facing ON characters TYPE string DEFAULT "right";
+DEFINE FIELD IF NOT EXISTS created_at    ON characters TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS last_played   ON characters TYPE option<datetime>;
+DEFINE INDEX IF NOT EXISTS idx_char_name    ON characters FIELDS name UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_char_account ON characters FIELDS account;
 """)
 IO.puts("✓ characters")
 
@@ -54,20 +59,20 @@ IO.puts("✓ characters")
 # 3. item_definitions
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE item_definitions SCHEMAFULL;
-DEFINE FIELD item_id          ON item_definitions TYPE string;
-DEFINE FIELD name             ON item_definitions TYPE string;
-DEFINE FIELD description      ON item_definitions TYPE string;
-DEFINE FIELD type             ON item_definitions TYPE string
+DEFINE TABLE IF NOT EXISTS item_definitions SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS item_id          ON item_definitions TYPE string;
+DEFINE FIELD IF NOT EXISTS name             ON item_definitions TYPE string;
+DEFINE FIELD IF NOT EXISTS description      ON item_definitions TYPE string;
+DEFINE FIELD IF NOT EXISTS type             ON item_definitions TYPE string
   ASSERT $value IN ["weapon", "armor", "accessory", "consumable", "material"];
-DEFINE FIELD rarity           ON item_definitions TYPE string
+DEFINE FIELD IF NOT EXISTS rarity           ON item_definitions TYPE string
   ASSERT $value IN ["common", "uncommon", "rare", "epic", "legendary"];
-DEFINE FIELD level_requirement ON item_definitions TYPE int DEFAULT 1;
-DEFINE FIELD slot             ON item_definitions TYPE option<string>;
-DEFINE FIELD stats            ON item_definitions FLEXIBLE TYPE option<object>;
-DEFINE FIELD stack_size       ON item_definitions TYPE int DEFAULT 1;
-DEFINE FIELD vendor_price     ON item_definitions TYPE int DEFAULT 0;
-DEFINE INDEX idx_item_id      ON item_definitions FIELDS item_id UNIQUE;
+DEFINE FIELD IF NOT EXISTS level_requirement ON item_definitions TYPE int DEFAULT 1;
+DEFINE FIELD IF NOT EXISTS slot             ON item_definitions TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS stats            ON item_definitions FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS stack_size       ON item_definitions TYPE int DEFAULT 1;
+DEFINE FIELD IF NOT EXISTS vendor_price     ON item_definitions TYPE int DEFAULT 0;
+DEFINE INDEX IF NOT EXISTS idx_item_id      ON item_definitions FIELDS item_id UNIQUE;
 """)
 IO.puts("✓ item_definitions")
 
@@ -75,13 +80,13 @@ IO.puts("✓ item_definitions")
 # 4. inventory
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE inventory SCHEMAFULL;
-DEFINE FIELD character   ON inventory TYPE record<characters>;
-DEFINE FIELD item        ON inventory TYPE record<item_definitions>;
-DEFINE FIELD quantity    ON inventory TYPE int DEFAULT 1;
-DEFINE FIELD equipped    ON inventory TYPE bool DEFAULT false;
-DEFINE FIELD acquired_at ON inventory TYPE datetime DEFAULT time::now();
-DEFINE INDEX idx_char_item ON inventory FIELDS character, item UNIQUE;
+DEFINE TABLE IF NOT EXISTS inventory SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS character   ON inventory TYPE record<characters>;
+DEFINE FIELD IF NOT EXISTS item        ON inventory TYPE record<item_definitions>;
+DEFINE FIELD IF NOT EXISTS quantity    ON inventory TYPE int DEFAULT 1;
+DEFINE FIELD IF NOT EXISTS equipped    ON inventory TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS acquired_at ON inventory TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_char_item ON inventory FIELDS character, item UNIQUE;
 """)
 IO.puts("✓ inventory")
 
@@ -89,21 +94,21 @@ IO.puts("✓ inventory")
 # 5. dungeon_templates
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE dungeon_templates SCHEMAFULL;
-DEFINE FIELD template_id  ON dungeon_templates TYPE string;
-DEFINE FIELD name         ON dungeon_templates TYPE string;
-DEFINE FIELD description  ON dungeon_templates TYPE string;
-DEFINE FIELD min_level    ON dungeon_templates TYPE int DEFAULT 1;
-DEFINE FIELD max_level    ON dungeon_templates TYPE int DEFAULT 99;
-DEFINE FIELD difficulty   ON dungeon_templates FLEXIBLE TYPE object;
-DEFINE FIELD npc_spawns   ON dungeon_templates TYPE array;
-DEFINE FIELD npc_spawns.*  ON dungeon_templates FLEXIBLE TYPE object;
-DEFINE FIELD loot_tables  ON dungeon_templates TYPE array;
-DEFINE FIELD loot_tables.* ON dungeon_templates FLEXIBLE TYPE object;
-DEFINE FIELD map          ON dungeon_templates TYPE object;
-DEFINE FIELD map.width    ON dungeon_templates TYPE int;
-DEFINE FIELD map.height   ON dungeon_templates TYPE int;
-DEFINE INDEX idx_template_id ON dungeon_templates FIELDS template_id UNIQUE;
+DEFINE TABLE IF NOT EXISTS dungeon_templates SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS template_id  ON dungeon_templates TYPE string;
+DEFINE FIELD IF NOT EXISTS name         ON dungeon_templates TYPE string;
+DEFINE FIELD IF NOT EXISTS description  ON dungeon_templates TYPE string;
+DEFINE FIELD IF NOT EXISTS min_level    ON dungeon_templates TYPE int DEFAULT 1;
+DEFINE FIELD IF NOT EXISTS max_level    ON dungeon_templates TYPE int DEFAULT 99;
+DEFINE FIELD IF NOT EXISTS difficulty   ON dungeon_templates FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS npc_spawns   ON dungeon_templates TYPE array;
+DEFINE FIELD IF NOT EXISTS npc_spawns.*  ON dungeon_templates FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS loot_tables  ON dungeon_templates TYPE array;
+DEFINE FIELD IF NOT EXISTS loot_tables.* ON dungeon_templates FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS map          ON dungeon_templates TYPE object;
+DEFINE FIELD IF NOT EXISTS map.width    ON dungeon_templates TYPE int;
+DEFINE FIELD IF NOT EXISTS map.height   ON dungeon_templates TYPE int;
+DEFINE INDEX IF NOT EXISTS idx_template_id ON dungeon_templates FIELDS template_id UNIQUE;
 """)
 IO.puts("✓ dungeon_templates")
 
@@ -111,18 +116,18 @@ IO.puts("✓ dungeon_templates")
 # 6. run_history
 # ============================================================
 SurrealDB.query!("""
-DEFINE TABLE run_history SCHEMAFULL;
-DEFINE FIELD character      ON run_history TYPE record<characters>;
-DEFINE FIELD dungeon        ON run_history TYPE record<dungeon_templates>;
-DEFINE FIELD party_members  ON run_history TYPE array;
-DEFINE FIELD party_members.* ON run_history TYPE string;
-DEFINE FIELD started_at     ON run_history TYPE datetime DEFAULT time::now();
-DEFINE FIELD completed_at   ON run_history TYPE option<datetime>;
-DEFINE FIELD duration_seconds ON run_history TYPE option<int>;
-DEFINE FIELD result         ON run_history TYPE string
+DEFINE TABLE IF NOT EXISTS run_history SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS character      ON run_history TYPE record<characters>;
+DEFINE FIELD IF NOT EXISTS dungeon        ON run_history TYPE record<dungeon_templates>;
+DEFINE FIELD IF NOT EXISTS party_members  ON run_history TYPE array;
+DEFINE FIELD IF NOT EXISTS party_members.* ON run_history TYPE string;
+DEFINE FIELD IF NOT EXISTS started_at     ON run_history TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS completed_at   ON run_history TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS duration_seconds ON run_history TYPE option<int>;
+DEFINE FIELD IF NOT EXISTS result         ON run_history TYPE string
   ASSERT $value IN ["completed", "failed", "abandoned"];
-DEFINE FIELD metrics        ON run_history FLEXIBLE TYPE object;
-DEFINE FIELD rewards        ON run_history FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS metrics        ON run_history FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS rewards        ON run_history FLEXIBLE TYPE object;
 """)
 IO.puts("✓ run_history")
 
@@ -163,7 +168,7 @@ items = [
 ]
 
 Enum.each(items, fn item ->
-  SurrealDB.query!("CREATE item_definitions CONTENT #{Jason.encode!(item)}")
+  SurrealDB.query!("UPSERT item_definitions SET #{map_to_set.(item)} WHERE item_id = '#{item.item_id}'")
 end)
 IO.puts("✓ seeded #{length(items)} item_definitions")
 
@@ -233,7 +238,7 @@ dungeons = [
 ]
 
 Enum.each(dungeons, fn dungeon ->
-  SurrealDB.query!("CREATE dungeon_templates CONTENT #{Jason.encode!(dungeon)}")
+  SurrealDB.query!("UPSERT dungeon_templates SET #{map_to_set.(dungeon)} WHERE template_id = '#{dungeon.template_id}'")
 end)
 IO.puts("✓ seeded #{length(dungeons)} dungeon_templates")
 
