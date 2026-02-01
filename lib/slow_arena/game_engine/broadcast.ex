@@ -96,8 +96,8 @@ defmodule SlowArena.GameEngine.Broadcast do
   defp collect_debug(loop_stats) do
     # Mnesia table sizes
     tables = [:player_positions, :player_stats, :player_cooldowns, :player_auto_attack,
-              :npc_state, :loot_piles, :party_state, :dungeon_instances, :combat_events,
-              :player_equipment]
+              :player_equipment, :player_gold, :player_inventory,
+              :npc_state, :loot_piles, :party_state, :dungeon_instances, :combat_events]
 
     table_sizes =
       Enum.map(tables, fn t ->
