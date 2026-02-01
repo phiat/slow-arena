@@ -16,6 +16,14 @@ import Config
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
+# SurrealDB connection
+config :slow_arena, :surrealdb,
+  url: System.get_env("SURREALDB_URL", "http://localhost:8000"),
+  namespace: System.get_env("SURREALDB_NS", "slow_arena"),
+  database: System.get_env("SURREALDB_DB", "game"),
+  username: System.get_env("SURREALDB_USER", "root"),
+  password: System.get_env("SURREALDB_PASS", "root")
+
 if System.get_env("PHX_SERVER") do
   config :slow_arena, SlowArenaWeb.Endpoint, server: true
 end

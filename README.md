@@ -23,7 +23,7 @@ graph TD
     App --> Web[SlowArenaWeb.Endpoint]
 
     GE --> Mnesia[MnesiaSetup]
-    GE --> Loop[GameLoop — 10Hz]
+    GE --> Loop["GameLoop - 10Hz"]
     GE --> Combat[CombatServer]
     GE --> AI[AIServer]
     GE --> Loot[LootServer]
@@ -34,6 +34,7 @@ graph TD
     Loop -.->|tick| AI
     Loop -.->|tick| Combat
     Loop -.->|tick| Loot
+    Loop -.->|tick| Broadcast
 ```
 
 ## Game Loop
@@ -82,7 +83,7 @@ graph LR
 
 - **Elixir 1.19 / OTP 28** — game engine as OTP supervision tree
 - **Phoenix + LiveView** — web client (WIP)
-- **Mnesia** — in-memory real-time game state (11 tables)
+- **Mnesia** — in-memory real-time game state (12 tables)
 - **SurrealDB** — persistent storage via Docker (WIP)
 
 ## Quick Start
@@ -155,6 +156,10 @@ arena> diagram ai
 
 The CLI also supports ASCII rendering of architecture diagrams via [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii):
 
+```bash
+uv tool install mermaid-ascii
+```
+
 ```
 arena> diagram arch
 arena> diagram loop
@@ -167,20 +172,22 @@ arena> diagram data
 
 ```mermaid
 graph LR
-    subgraph Mnesia — RAM
+    subgraph Mnesia_RAM["Mnesia - RAM"]
         A[player_positions]
         B[player_stats]
         C[player_cooldowns]
+        AA[player_auto_attack]
+        PE[player_equipment]
+        PG[player_gold]
+        PI[player_inventory]
         D[npc_state]
         E[loot_piles]
         F[party_state]
         G[dungeon_instances]
         H[combat_events]
-        PG[player_gold]
-        PI[player_inventory]
     end
 
-    subgraph SurrealDB — Persistent
+    subgraph SurrealDB_Persistent["SurrealDB - Persistent"]
         I[accounts]
         J[characters]
         K[inventory]
@@ -199,15 +206,21 @@ lib/
 │   ├── application.ex          # OTP application
 │   └── game_engine/
 │       ├── supervisor.ex       # Engine supervisor
-│       ├── mnesia_setup.ex     # Table initialization
+│       ├── mnesia_setup.ex     # Table initialization (12 tables)
 │       ├── game_loop.ex        # 10Hz tick loop
+│       ├── broadcast.ex        # PubSub game state broadcast
 │       ├── movement.ex         # Player movement
+│       ├── collision.ex        # Boundary & NPC collision
 │       ├── combat_server.ex    # Abilities & damage
 │       ├── ai_server.ex        # NPC behavior
-│       ├── loot_server.ex      # Loot generation
+│       ├── loot_server.ex      # Loot generation & pickup
 │       ├── party_server.ex     # Party management
-│       └── dungeon_server.ex   # Instance management
-├── slow_arena_web/             # Phoenix web layer
+│       ├── dungeon_server.ex   # Instance management
+│       └── classes.ex          # Character class stat templates
+├── slow_arena_web/
+│   ├── live/
+│   │   └── game_live.ex        # LiveView game client
+│   └── ...                     # Phoenix web layer
 └── mix/tasks/
     ├── game.cli.ex             # Interactive CLI
     └── game.status.ex          # Status command
