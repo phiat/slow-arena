@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.GameLoop do
+  @moduledoc "10Hz game loop orchestrating movement, AI, combat, loot, and broadcast ticks."
   use GenServer
   require Logger
 
@@ -24,9 +25,6 @@ defmodule SlowArena.GameEngine.GameLoop do
     SlowArena.GameEngine.CombatServer.tick()
     SlowArena.GameEngine.LootServer.tick()
 
-    # === BROADCAST ===
-    # SlowArena.GameEngine.Broadcast.send_updates()
-
     elapsed = System.monotonic_time(:millisecond) - start_time
 
     if elapsed > @tick_rate do
@@ -36,10 +34,18 @@ defmodule SlowArena.GameEngine.GameLoop do
     # Running average
     avg = state.avg_elapsed * 0.95 + elapsed * 0.05
 
+    new_state = %{state | tick_count: state.tick_count + 1, last_tick: start_time, avg_elapsed: avg}
+
+    # === BROADCAST (pass tick stats directly to avoid self-call) ===
+    SlowArena.GameEngine.Broadcast.send_updates(%{
+      tick_count: new_state.tick_count,
+      avg_elapsed_ms: Float.round(avg, 2),
+      tick_rate: @tick_rate
+    })
+
     schedule_tick()
 
-    {:noreply,
-     %{state | tick_count: state.tick_count + 1, last_tick: start_time, avg_elapsed: avg}}
+    {:noreply, new_state}
   end
 
   def get_stats do

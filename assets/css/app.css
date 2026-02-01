@@ -103,3 +103,81 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* === Slow Arena Retro Theme === */
+
+/* Color palette custom properties */
+:root {
+  --sa-chocolate-plum: #563635;
+  --sa-ebony: #5b6057;
+  --sa-dusty-olive: #6e9075;
+  --sa-mint-leaf: #78c091;
+  --sa-neon-ice: #81f0e5;
+}
+
+/* Page background */
+body {
+  background-color: var(--sa-chocolate-plum);
+  color: var(--sa-mint-leaf);
+}
+
+/* Game container */
+#game-container {
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* Title with neon glow */
+.sa-title {
+  color: var(--sa-neon-ice);
+  text-shadow:
+    0 0 6px rgba(129, 240, 229, 0.5),
+    0 0 14px rgba(129, 240, 229, 0.25);
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  animation: sa-title-pulse 3s ease-in-out infinite;
+}
+
+@keyframes sa-title-pulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(129, 240, 229, 0.5), 0 0 14px rgba(129, 240, 229, 0.25); }
+  50% { text-shadow: 0 0 10px rgba(129, 240, 229, 0.7), 0 0 22px rgba(129, 240, 229, 0.4); }
+}
+
+/* Subtitle / instructions */
+.sa-subtitle {
+  color: var(--sa-dusty-olive);
+  font-family: "Courier New", Courier, monospace;
+  opacity: 0.8;
+}
+
+/* Canvas styling with subtle border glow */
+#game-canvas {
+  border: 2px solid var(--sa-ebony);
+  border-radius: 4px;
+  animation: sa-border-glow 4s ease-in-out infinite;
+  transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+@keyframes sa-border-glow {
+  0%, 100% { border-color: var(--sa-ebony); box-shadow: 0 0 4px rgba(91, 96, 87, 0.3); }
+  50% { border-color: var(--sa-dusty-olive); box-shadow: 0 0 8px rgba(110, 144, 117, 0.25); }
+}
+
+/* HUD retro monospace styling */
+.sa-hud {
+  font-family: "Courier New", Courier, monospace;
+  color: var(--sa-dusty-olive);
+  letter-spacing: 0.04em;
+}
+
+.sa-hud-hp {
+  color: var(--sa-mint-leaf);
+}
+
+.sa-hud-mana {
+  color: var(--sa-neon-ice);
+}
+
+.sa-hud-dim {
+  color: var(--sa-ebony);
+}

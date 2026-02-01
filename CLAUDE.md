@@ -1,5 +1,7 @@
 # CLAUDE.md - Project Directives
 
+If a tool is needed and not installed, ask the user before installing it.
+
 ## Project: Slow Arena - Gauntlet-style RPG Game Engine
 
 ### Tech Stack

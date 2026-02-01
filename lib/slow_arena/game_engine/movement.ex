@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.Movement do
+  @moduledoc "Player movement processing from keyboard input."
   # pixels per second
   @movement_speed 150.0
   # 100ms per tick
@@ -14,8 +15,11 @@ defmodule SlowArena.GameEngine.Movement do
           new_x = x + vx * @movement_speed * @delta_time
           new_y = y + vy * @movement_speed * @delta_time
 
-          # Basic bounds clamping (TODO: real collision)
-          {final_x, final_y} = clamp_bounds(new_x, new_y)
+          # Soft repulsion + bounds clamping
+          {pushed_x, pushed_y} =
+            SlowArena.GameEngine.Collision.resolve_player(char_id, new_x, new_y)
+
+          {final_x, final_y} = clamp_bounds(pushed_x, pushed_y)
 
           new_facing =
             if vx != 0.0 or vy != 0.0 do

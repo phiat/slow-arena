@@ -685,29 +685,28 @@ defmodule GameEngine.Loot do
     loot_id
   end
   
+  @pickup_range 50.0
+
+  # CLI version (no proximity check)
   def pickup_loot(character_id, loot_id) do
-    :mnesia.transaction(fn ->
-      case :mnesia.read({:loot_piles, loot_id}) do
-        [] ->
-          {:error, :not_found}
-        
-        [{_, _, instance_id, x, y, items, gold, _, _, reserved_by}] ->
-          cond do
-            reserved_by != nil and reserved_by != character_id ->
-              {:error, :reserved}
-            
-            true ->
-              # Add to inventory (write to SurrealDB)
-              add_items_to_inventory(character_id, items)
-              add_gold(character_id, gold)
-              
-              # Remove loot pile
-              :mnesia.delete({:loot_piles, loot_id})
-              
-              {:ok, %{items: items, gold: gold}}
-          end
-      end
-    end)
+    # ... simple version for CLI
+  end
+
+  # Browser version with proximity + instance validation
+  def pickup_loot(character_id, loot_id, player_x, player_y, player_instance_id) do
+    case :mnesia.dirty_read(:loot_piles, loot_id) do
+      [{_, _, instance_id, lx, ly, items, gold, _, _, reserved_by}] ->
+        cond do
+          instance_id != player_instance_id -> {:error, :wrong_instance}
+          reserved_by != nil and reserved_by != character_id -> {:error, :reserved}
+          distance(player_x, player_y, lx, ly) > @pickup_range -> {:error, :too_far}
+          true ->
+            :mnesia.dirty_delete(:loot_piles, loot_id)
+            award_loot(character_id, items, gold)  # writes to player_gold + player_inventory
+            {:ok, %{items: items, gold: gold}}
+        end
+      [] -> {:error, :not_found}
+    end
   end
   
   # Cleanup expired loot

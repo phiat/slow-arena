@@ -1,4 +1,5 @@
 defmodule SlowArena.GameEngine.LootServer do
+  @moduledoc "Loot generation, pile management, and expiration."
   use GenServer
   require Logger
 
@@ -29,6 +30,39 @@ defmodule SlowArena.GameEngine.LootServer do
         %{item_id: "health_potion", drop_chance: 1.0, max_qty: 3},
         %{item_id: "rare_gem", drop_chance: 0.2, max_qty: 1}
       ]
+    },
+    "ghost" => %{
+      gold_chance: 0.7,
+      max_gold: 20,
+      items: [
+        %{item_id: "ectoplasm", drop_chance: 0.4, max_qty: 1},
+        %{item_id: "spirit_shard", drop_chance: 0.15, max_qty: 1}
+      ]
+    },
+    "spider" => %{
+      gold_chance: 0.6,
+      max_gold: 10,
+      items: [
+        %{item_id: "spider_silk", drop_chance: 0.5, max_qty: 2},
+        %{item_id: "venom_sac", drop_chance: 0.2, max_qty: 1}
+      ]
+    },
+    "necromancer" => %{
+      gold_chance: 1.0,
+      max_gold: 50,
+      min_gold: 20,
+      items: [
+        %{item_id: "dark_tome", drop_chance: 0.3, max_qty: 1},
+        %{item_id: "bone_staff", drop_chance: 0.1, max_qty: 1},
+        %{item_id: "health_potion", drop_chance: 0.8, max_qty: 2}
+      ]
+    },
+    "slime" => %{
+      gold_chance: 0.5,
+      max_gold: 5,
+      items: [
+        %{item_id: "slime_gel", drop_chance: 0.6, max_qty: 2}
+      ]
     }
   }
 
@@ -58,6 +92,8 @@ defmodule SlowArena.GameEngine.LootServer do
     end
   end
 
+  @pickup_range 50.0
+
   def pickup_loot(character_id, loot_id) do
     case :mnesia.dirty_read(:loot_piles, loot_id) do
       [{:loot_piles, ^loot_id, _iid, _x, _y, items, gold, _spawned, _expires, reserved}] ->
@@ -71,6 +107,60 @@ defmodule SlowArena.GameEngine.LootServer do
       [] ->
         {:error, :not_found}
     end
+  end
+
+  def pickup_loot(character_id, loot_id, player_x, player_y, player_instance_id) do
+    case :mnesia.dirty_read(:loot_piles, loot_id) do
+      [{:loot_piles, ^loot_id, instance_id, lx, ly, items, gold, _spawned, _expires, reserved}] ->
+        cond do
+          instance_id != player_instance_id ->
+            {:error, :wrong_instance}
+
+          reserved != nil and reserved != character_id ->
+            {:error, :reserved}
+
+          distance(player_x, player_y, lx, ly) > @pickup_range ->
+            {:error, :too_far}
+
+          true ->
+            :mnesia.dirty_delete(:loot_piles, loot_id)
+            award_loot(character_id, items, gold)
+            {:ok, %{items: items, gold: gold}}
+        end
+
+      [] ->
+        {:error, :not_found}
+    end
+  end
+
+  defp award_loot(character_id, items, gold) do
+    # Add gold
+    if gold > 0 do
+      current_gold =
+        case :mnesia.dirty_read(:player_gold, character_id) do
+          [{:player_gold, _, amount}] -> amount
+          [] -> 0
+        end
+
+      :mnesia.dirty_write({:player_gold, character_id, current_gold + gold})
+    end
+
+    # Add items to inventory
+    Enum.each(items, fn %{item_id: item_id, quantity: qty} ->
+      key = {character_id, item_id}
+
+      current_qty =
+        case :mnesia.dirty_read(:player_inventory, key) do
+          [{:player_inventory, _, _, existing}] -> existing
+          [] -> 0
+        end
+
+      :mnesia.dirty_write({:player_inventory, key, item_id, current_qty + qty})
+    end)
+  end
+
+  defp distance(x1, y1, x2, y2) do
+    :math.sqrt(:math.pow(x1 - x2, 2) + :math.pow(y1 - y2, 2))
   end
 
   def list_loot(instance_id) do
@@ -100,9 +190,15 @@ defmodule SlowArena.GameEngine.LootServer do
         end
       end)
 
+    min_gold = Map.get(table, :min_gold, 0)
+
     gold =
       if :rand.uniform() < table.gold_chance do
-        :rand.uniform(table.max_gold)
+        if min_gold > 0 do
+          min_gold + :rand.uniform(max(1, table.max_gold - min_gold))
+        else
+          :rand.uniform(table.max_gold)
+        end
       else
         0
       end

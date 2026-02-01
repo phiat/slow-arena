@@ -6,7 +6,7 @@
 [![Mnesia](https://img.shields.io/badge/Mnesia-RAM_tables-green)](https://www.erlang.org/doc/apps/mnesia/)
 [![SurrealDB](https://img.shields.io/badge/SurrealDB-Docker-ff69b4?logo=surrealdb)](https://surrealdb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-14_passing-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/Tests-31_passing-brightgreen)](#)
 [![GenServers](https://img.shields.io/badge/GenServers-7-blueviolet)](#game-engine)
 [![Tick Rate](https://img.shields.io/badge/Tick_Rate-10Hz-informational)](#game-engine)
 [![CLI](https://img.shields.io/badge/CLI-Interactive-success)](#cli)
@@ -82,7 +82,7 @@ graph LR
 
 - **Elixir 1.19 / OTP 28** — game engine as OTP supervision tree
 - **Phoenix + LiveView** — web client (WIP)
-- **Mnesia** — in-memory real-time game state (9 tables)
+- **Mnesia** — in-memory real-time game state (11 tables)
 - **SurrealDB** — persistent storage via Docker (WIP)
 
 ## Quick Start
@@ -113,7 +113,7 @@ Requires Elixir 1.15+, Docker.
 | **Movement** | WASD input, velocity-based, diagonal normalization |
 | **CombatServer** | 6 abilities, auto-attacks, stat scaling, crits |
 | **AIServer** | NPC state machine: idle/chase/attack/flee |
-| **LootServer** | Template-based drops, 60s expiry, pickup |
+| **LootServer** | Template-based drops, 60s expiry, proximity pickup with gold/inventory |
 | **PartyServer** | Up to 8 players, leader succession, loot modes |
 | **DungeonServer** | Instanced dungeons with difficulty scaling |
 
@@ -148,6 +148,7 @@ arena> npcs
 arena> cast hero slash 200.0 150.0
 arena> stats hero
 arena> loot
+arena> pickup hero loot_123
 arena> status
 arena> diagram ai
 ```
@@ -175,6 +176,8 @@ graph LR
         F[party_state]
         G[dungeon_instances]
         H[combat_events]
+        PG[player_gold]
+        PI[player_inventory]
     end
 
     subgraph SurrealDB — Persistent
