@@ -156,6 +156,10 @@ arena> diagram ai
 
 The CLI also supports ASCII rendering of architecture diagrams via [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii):
 
+```bash
+uv tool install mermaid-ascii
+```
+
 ```
 arena> diagram arch
 arena> diagram loop
