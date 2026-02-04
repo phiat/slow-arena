@@ -37,3 +37,8 @@ npm-debug.log
 
 # Mnesia data
 /Mnesia.*/
+
+# Environment files
+.env
+.env.*
+!.env.example
