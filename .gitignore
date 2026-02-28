@@ -42,3 +42,7 @@ npm-debug.log
 .env
 .env.*
 !.env.example
+
+# Claude artifacts
+AGENTS.md
+.beads/
